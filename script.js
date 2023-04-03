@@ -31,8 +31,7 @@ function startGame() {
   // 開始ボタンを非表示にし、リセットボタンを表示
   document.getElementById("start-game").style.display = "none";
   document.getElementById("reset-game").style.display = "block";
-  document.getElementById("monster").style.backgroundImage = "url('images/goblin.png')";
-
+  document.getElementById("monster").style.backgroundImage = "url('images/goblin.png?raw=true')";
 }
 
 function resetGame() {
