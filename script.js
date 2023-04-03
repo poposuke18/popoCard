@@ -14,7 +14,7 @@ let score = 0;
 let initialMonsterHP = 30;
 let monsterHP = initialMonsterHP;
 let turnCount = 0;
-const monsterNames = ["goblin", "デビル", "ダークナイト", "ダーククイーン"];
+const monsterNames = ["goblin", "devil", "ダークナイト", "ダーククイーン"];
 let currentMonsterIndex = 0;
 
 
