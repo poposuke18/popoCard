@@ -1,0 +1,69 @@
+body {
+  font-family: 'Arial', sans-serif;
+}
+
+#game {
+  width: 80%;
+  margin: 0 auto;
+  text-align: center;
+}
+
+#monster-hp, #deck, #discard, #play-area, #hand {
+  margin: 10px;
+}
+
+.card {
+  display: inline-block;
+  border: 1px solid black;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 5px;
+}
+
+.red {
+  background-color: red;
+}
+
+.black {
+  background-color: black;
+  color: white;
+}
+
+.blue {
+  background-color: blue;
+  color: white;
+}
+
+.bar-container {
+  position: relative;
+  height: 20px;
+  width: 100%;
+  background-color: #e0e0e0;
+  margin-bottom: 10px;
+}
+
+.hp-bar {
+  position: absolute;
+  height: 100%;
+  background-color: red;
+    max-width: 100%; /* 追加 */
+  white-space: nowrap; /* 追加 */
+  overflow: hidden; /* 追加 */
+}
+
+.deck-bar {
+  position: absolute;
+  height: 100%;
+  background-color: green;
+}
+
+.monster {
+  width: 1280px;
+  height: 512px;
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+
+
