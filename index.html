@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モンスター対戦ゲーム</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game">
+        <div id="monster-name" class="monster-name">ゴブリン</div>
+        <div id="monster" class="monster"></div>
+        <div id="monster-hp">モンスターのHP: <span id="hp-value">30</span></div>
+        <div class="bar-container">
+            <div id="monster-hp-bar" class="hp-bar"></div>
+          </div>
+        <div id="deck">山札の枚数: <span id="deck-value">39</span></div>
+        <div class="bar-container">
+            <div id="deck-count-bar" class="deck-bar"></div>
+          </div>
+        <div id="discard">捨て場の枚数: <span id="discard-value">0</span></div>
+        <p>ターン数: <span id="turn-value">0</span></p>
+        <div id="play-area">場:</div>
+        <div id="hand">手札:</div>
+        <button id="start-game">ゲーム開始</button><button id="reset-game" style="display: none;">リセット</button>
+        <div>
+            スコア: <span id="score-value">0</span>
+          </div>
+
+    </div>
+    <p id="card-description"></p>
+    
+
+    <script src="script.js"></script>
+</body>
+</html>
