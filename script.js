@@ -14,7 +14,7 @@ let score = 0;
 let initialMonsterHP = 30;
 let monsterHP = initialMonsterHP;
 let turnCount = 0;
-const monsterNames = ["ゴブリン", "デビル", "ダークナイト", "ダーククイーン"];
+const monsterNames = ["goblin", "デビル", "ダークナイト", "ダーククイーン"];
 let currentMonsterIndex = 0;
 
 
@@ -31,7 +31,7 @@ function startGame() {
   // 開始ボタンを非表示にし、リセットボタンを表示
   document.getElementById("start-game").style.display = "none";
   document.getElementById("reset-game").style.display = "block";
-  document.getElementById("monster").style.backgroundImage = "url('images/ゴブリン.png')";
+  document.getElementById("monster").style.backgroundImage = "url('images/goblin.png')";
 
 }
 
