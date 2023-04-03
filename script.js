@@ -391,7 +391,7 @@ function showNextMonster() {
     drawCards(4);
     monsterHP = initialMonsterHP + 15 * currentMonsterIndex;
     document.getElementById("monster-name").innerText = monsterNames[currentMonsterIndex];
-    document.getElementById("monster-image").style.backgroundImage = `url('images/${monsterNames[currentMonsterIndex].toLowerCase().replace(/ /g, "_")}.png')`;
+    document.getElementById("monster-image").style.backgroundImage = `url('images/${monsterNames[currentMonsterIndex].toLowerCase().replace(/ /g, "_")}.png?raw=true')`;
     updateGameState();
 
   }
