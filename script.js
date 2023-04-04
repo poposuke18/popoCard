@@ -404,7 +404,7 @@ function checkVictoryOrDefeat() {
     showNextMonster();
     }
     if (deck.length === 0) {
-        alert("敗北…手札と山札がなくなりました。");
+        alert("敗北…山札がなくなりました。");
         // ゲームをリセットまたは再開するためのオプションを提供できます。
     }
 }
