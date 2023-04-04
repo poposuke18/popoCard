@@ -14,7 +14,7 @@ let score = 0;
 let initialMonsterHP = 30;
 let monsterHP = initialMonsterHP;
 let turnCount = 0;
-const monsterNames = ["goblin", "devil", "ダークナイト", "ダーククイーン"];
+const monsterNames = ["goblin", "devil", "dark_knight", "dark_queen"];
 let currentMonsterIndex = 0;
 
 
@@ -391,7 +391,7 @@ function showNextMonster() {
     drawCards(4);
     monsterHP = initialMonsterHP + 15 * currentMonsterIndex;
     document.getElementById("monster-name").innerText = monsterNames[currentMonsterIndex];
-    document.getElementById("monster-image").style.backgroundImage = `url('images/${monsterNames[currentMonsterIndex].toLowerCase().replace(/ /g, "_")}.png?raw=true')`;
+    document.getElementById("monster").style.backgroundImage = `url('images/${monsterNames[currentMonsterIndex].toLowerCase().replace(/ /g, "_")}.png?raw=true')`;
     updateGameState();
 
   }
