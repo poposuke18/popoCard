@@ -58,7 +58,6 @@ body {
 }
 
 .monster {
-  width: 1000px;
   height: 350px;
   background-size: contain;
   background-position: center center;
