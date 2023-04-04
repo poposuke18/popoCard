@@ -42,6 +42,7 @@ function resetGame() {
   discardPile.length = 0;
   monsterHP = initialMonsterHP;
   turnCount = 0;
+  currentMonsterIndex = 0;
 
   // ゲームを開始
   startGame();
