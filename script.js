@@ -11,10 +11,12 @@ const playArea = [];
 const discardPile = [];
 let monsterCount = 1;
 let score = 0;
-let initialMonsterHP = 35;
+let initialMonsterHP = 30;
 let monsterHP = initialMonsterHP;
 let turnCount = 0;
-const monsterNames = ["goblin", "devil", "dark_knight", "dark_queen"];
+let lastplayedbluecard = 0;
+
+const monsterNames = ["GOBLIN", "DEVIL", "DARK KNIGHT", "DARK QUEEN"];
 let currentMonsterIndex = 0;
 
 
@@ -31,7 +33,8 @@ function startGame() {
   // 開始ボタンを非表示にし、リセットボタンを表示
   document.getElementById("start-game").style.display = "none";
   document.getElementById("reset-game").style.display = "block";
-  document.getElementById("monster").style.backgroundImage = "url('images/goblin.png?raw=true')";
+  document.getElementById("monster").style.backgroundImage = "url('images/ゴブリン.png')";
+
 }
 
 function resetGame() {
@@ -43,6 +46,8 @@ function resetGame() {
   monsterHP = initialMonsterHP;
   turnCount = 0;
   currentMonsterIndex = 0;
+  score = 0;
+  document.getElementById("monster-name").innerText = monsterNames[currentMonsterIndex];
 
   // ゲームを開始
   startGame();
@@ -80,9 +85,6 @@ function updateHPBar() {
   hpBar.style.width = `${hpPercentage}%`;
 }
 
-let lastplayedbluecard = 0;
-
-
 function playCard(cardIndex) {
   const card = hand[cardIndex];
   if (card.color === "red" && playArea.length > 0) {
@@ -101,7 +103,6 @@ function playCard(cardIndex) {
   }
   turnCount++; // ターン数を増やす
   updateGameState();
-
 }
 
 function applyEffect(card) {
@@ -150,10 +151,7 @@ function applyEffect(card) {
           handleBlueCardEffect(card);
           break;
   }
-
   updateGameState();
-
-
 }
 
 
@@ -248,8 +246,6 @@ function handleBlueCardEffect(card) {
   }
 }
 
-
-
 function updateGameState() {
   document.getElementById("hp-value").innerText = monsterHP;
   document.getElementById("deck-value").innerText = deck.length;
@@ -275,8 +271,6 @@ function updateGameState() {
     const deckPercentage = (deck.length / 39) * 100; // 最初の山札は39枚
     deckCountBar.style.width = `${deckPercentage}%`;
     
-
-
 }
 
 function updateHandDisplay() {
@@ -392,13 +386,12 @@ function showNextMonster() {
     drawCards(4);
     monsterHP = initialMonsterHP + 15 * currentMonsterIndex;
     document.getElementById("monster-name").innerText = monsterNames[currentMonsterIndex];
-    document.getElementById("monster").style.backgroundImage = `url('images/${monsterNames[currentMonsterIndex].toLowerCase().replace(/ /g, "_")}.png?raw=true')`;
+    document.getElementById("monster").style.backgroundImage = `url('images/${monsterNames[currentMonsterIndex].toLowerCase().replace(/ /g, "_")}.png')`;
     updateGameState();
 
   }
 
 }
-
 
 function checkVictoryOrDefeat() {
   if (monsterHP <= 0) {
