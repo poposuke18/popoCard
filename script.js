@@ -33,7 +33,7 @@ function startGame() {
   // 開始ボタンを非表示にし、リセットボタンを表示
   document.getElementById("start-game").style.display = "none";
   document.getElementById("reset-game").style.display = "block";
-  document.getElementById("monster").style.backgroundImage = "url('images/ゴブリン.png')";
+  document.getElementById("monster").style.backgroundImage = "url('images/GOBLIN.png?raw=true')";
 
 }
 
@@ -386,7 +386,7 @@ function showNextMonster() {
     drawCards(4);
     monsterHP = initialMonsterHP + 15 * currentMonsterIndex;
     document.getElementById("monster-name").innerText = monsterNames[currentMonsterIndex];
-    document.getElementById("monster").style.backgroundImage = `url('images/${monsterNames[currentMonsterIndex].toLowerCase().replace(/ /g, "_")}.png')`;
+    document.getElementById("monster").style.backgroundImage = `url('images/${monsterNames[currentMonsterIndex].toLowerCase().replace(/ /g, "_")}.png?raw=true')`;
     updateGameState();
 
   }
