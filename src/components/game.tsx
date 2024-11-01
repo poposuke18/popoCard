@@ -5,6 +5,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import { GameCard } from './game-card'
+import { motion, AnimatePresence } from 'framer-motion'
+import { CardEffect, getCardEffect } from '@/lib/cards/effects'
+import { ModifierManager } from '@/lib/cards/modifiers'
+import { animateDrawCard, wait } from '@/lib/animations/card'
+import { BlueCardEffect } from '@/lib/cards/blueCardEffects' // 追加
 
 interface CardType {
   color: 'red' | 'black' | 'blue'
@@ -24,15 +29,22 @@ const MONSTERS: Monster[] = [
 ]
 
 export function Game() {
-  const [monsterHP, setMonsterHP] = useState(30)
-  const [deck, setDeck] = useState<CardType[]>([])
-  const [hand, setHand] = useState<CardType[]>([])
-  const [playArea, setPlayArea] = useState<CardType[]>([])
-  const [discardPile, setDiscardPile] = useState<CardType[]>([])
-  const [score, setScore] = useState(0)
-  const [turnCount, setTurnCount] = useState(0)
-  const [currentMonster, setCurrentMonster] = useState(MONSTERS[0])
-  const [gameStarted, setGameStarted] = useState(false)
+    const [monsterHP, setMonsterHP] = useState(30)
+    const [deck, setDeck] = useState<CardType[]>([])
+    const [hand, setHand] = useState<CardType[]>([])
+    const [playArea, setPlayArea] = useState<CardType[]>([])
+    const [discardPile, setDiscardPile] = useState<CardType[]>([])
+    const [effectManager] = useState(() => new ModifierManager())
+    const [effectMessage, setEffectMessage] = useState<string>('')
+
+    const [score, setScore] = useState(0)
+    const [turnCount, setTurnCount] = useState(0)
+    const [currentMonster, setCurrentMonster] = useState(MONSTERS[0])
+    const [gameStarted, setGameStarted] = useState(false)
+    const [isDrawing, setIsDrawing] = useState(false)
+    const [gameOver, setGameOver] = useState(false)
+    const [blueEffects] = useState(() => new BlueCardEffect());
+
 
   const createDeck = () => {
     const newDeck: CardType[] = []
@@ -54,51 +66,318 @@ export function Game() {
     return newDeck
   }
 
-  const drawCards = (num: number) => {
+  const drawCards = async (num: number) => {
     if (deck.length < num) {
-      // ゲームオーバー処理
+      handleGameOver()
       return
     }
-    const newHand = [...hand, ...deck.slice(0, num)]
-    setHand(newHand)
-    setDeck(deck.slice(num))
+    
+    setIsDrawing(true)
+    
+    for (let i = 0; i < num; i++) {
+      await animateDrawCard(() => {
+        setHand(prev => [...prev, deck[i]])
+      }, 200)
+    }
+    
+    setDeck(prev => prev.slice(num))
+    setIsDrawing(false)
   }
 
-  const startGame = () => {
-    const newDeck = shuffleDeck(createDeck())
-    setDeck(newDeck)
+  const startGame = async () => {
+    setGameOver(false)  // 追加
+
+    // デッキが空の場合は新しく作成
+    if (deck.length === 0) {
+      const newDeck = shuffleDeck(createDeck())
+      setDeck(newDeck)
+    }
+    
     setHand([])
     setPlayArea([])
     setDiscardPile([])
     setMonsterHP(currentMonster.maxHP)
     setTurnCount(0)
     setGameStarted(true)
-    drawCards(4)
+    
+    try {
+      // ちょっと待ってから初期手札を配る（視覚的な効果のため）
+      await wait(300)
+      await drawCards(4)
+    } catch (error) {
+      console.error('Error during game start:', error)
+    }
   }
 
   const resetGame = () => {
+    setGameStarted(false)
     setCurrentMonster(MONSTERS[0])
     setScore(0)
-    startGame()
+    // 新しいデッキを用意
+    const newDeck = shuffleDeck(createDeck())
+    setDeck(newDeck)
   }
 
-  const playCard = (cardIndex: number) => {
-    const card = hand[cardIndex]
-    // カードの効果を適用する処理をここに実装
-    // ...
-
-    const newHand = [...hand]
-    newHand.splice(cardIndex, 1)
-    setHand(newHand)
-    setPlayArea([...playArea, card])
-    setTurnCount(turnCount + 1)
-    drawCards(1)
+  const cardVariants = {
+    hidden: { scale: 0.8, opacity: 0, y: 50 },
+    visible: { 
+      scale: 1, 
+      opacity: 1, 
+      y: 0,
+      transition: { type: "spring", duration: 0.5 }
+    },
+    exit: { 
+      scale: 0.8, 
+      opacity: 0, 
+      transition: { duration: 0.2 }
+    }
   }
 
+  const playCard = async (cardIndex: number) => {
+    const card = hand[cardIndex];
+    
+    // 青1のカードの場合、手札に黒カードがあるかチェック
+    if (card.color === 'blue' && card.value === 1) {
+      const hasBlackCard = hand.some(c => c.color === 'black');
+      if (!hasBlackCard) {
+        showEffectMessage('このカードは手札に黒のカードがないと出せません');
+        return;
+      }
+    }
+  
+    // 赤カードの制限チェック
+    if (card.color === 'red' && playArea.length > 0) {
+      const lastPlayedCard = playArea[playArea.length - 1];
+      if (card.value <= lastPlayedCard.value) {
+        showEffectMessage('赤のカードは直前のカードより大きな数でないと出せません');
+        return;
+      }
+    }
+  
+    // カードを手札から場に移動
+    const newHand = [...hand];
+    newHand.splice(cardIndex, 1);
+    setHand(newHand);
+    setPlayArea(prev => [...prev, card]);
+  
+    // 効果の実行
+    const effect = getCardEffect(card.color, card.value);
+    await executeEffect(effect);
+  
+    // ターン終了処理
+    setTurnCount(prev => prev + 1);
+    
+    // 青2の効果でなければカードを引く
+    if (!blueEffects.shouldSkipNextDraw()) {
+      await drawCards(1);
+    }
+  
+    // モンスター撃破判定
+    if (monsterHP <= 0) {
+      handleMonsterDefeat();
+    }
+  };
+
+  const showEffectMessage = (message: string) => {
+    setEffectMessage(message)
+    setTimeout(() => setEffectMessage(''), 2000) // 2秒後にメッセージを消す
+  }
+
+  const executeEffect = async (effect: CardEffect) => {
+    const modifiedValue = effect.type === 'damage'
+      ? blueEffects.getModifiedDamage(effect.value)
+      : effect.type === 'discard'
+      ? blueEffects.getModifiedDiscardAmount(effect.value)
+      : effect.value;
+       
+    switch (effect.type) {
+        case 'damage':
+            setMonsterHP(prev => Math.max(0, prev - modifiedValue));
+            showEffectMessage(`${modifiedValue}のダメージ！`);
+            break;
+        
+      case 'heal':
+        setMonsterHP(prev => Math.min(currentMonster.maxHP, prev + modifiedValue))
+        showEffectMessage(`${modifiedValue}回復！`)
+        break
+        
+        case 'discard':
+            if (deck.length < modifiedValue) {
+              showEffectMessage('デッキが足りません！');
+              return;
+            }
+            const cardsToDiscard = deck.slice(0, modifiedValue);
+            setDiscardPile(prev => [...prev, ...cardsToDiscard]);
+            setDeck(prev => prev.slice(modifiedValue));
+            showEffectMessage(`${modifiedValue}枚捨てました`);
+            break;
+        
+            case 'special':
+                handleSpecialEffect(effect);
+                break;
+    }
+  }
+
+  // 特殊効果の処理
+  const handleSpecialEffect = async (effect: CardEffect) => {
+    blueEffects.setLastBlueCard(effect.value);
+
+    switch (effect.value) {
+        case 1:
+            // まず手札に黒カードがあるかチェック
+            const blackCards = hand.filter(c => c.color === 'black');
+            if (blackCards.length === 0) {
+              showEffectMessage('このカードは手札に黒のカードがないと出せません');
+              // カードを出せなかった場合、手札に戻す必要がある
+              setHand(prev => [...prev, card]);
+              // 場から除去
+              setPlayArea(prev => prev.slice(0, -1));
+              return;
+            }
+          
+            // ランダムに黒カードを選択
+            const randomBlackCard = blackCards[Math.floor(Math.random() * blackCards.length)];
+            showEffectMessage('ランダムな黒カードを場に出します');
+            
+            // 選択された黒カードのインデックスを探す
+            const blackCardIndex = hand.findIndex(c => 
+              c.color === randomBlackCard.color && 
+              c.value === randomBlackCard.value
+            );
+            
+            // 黒カードを出す
+            if (blackCardIndex !== -1) {
+              // 少し待ってから黒カードを出す（視覚的効果）
+              await wait(500);
+              // 既存のplayCard関数を使用すると無限ループの可能性があるため、
+              // 直接効果を適用
+              const blackCardEffect = getCardEffect('black', randomBlackCard.value);
+              await executeEffect(blackCardEffect);
+              
+              // 手札から削除
+              setHand(prev => prev.filter((_, index) => index !== blackCardIndex));
+              // 場に追加
+              setPlayArea(prev => [...prev, randomBlackCard]);
+            }
+            break;
+
+      case 2:
+        // このターンカードを引かない
+        showEffectMessage('このターンはカードを引きません');
+        break;
+
+      case 4:
+        // モンスターのHP回復
+        setMonsterHP(prev => Math.min(currentMonster.maxHP, prev + 10));
+        showEffectMessage('モンスターのHPを10回復');
+        break;
+
+      case 8:
+        // 捨て札から2枚山札に戻す
+        if (discardPile.length === 0) {
+          showEffectMessage('捨て札がありません');
+          return;
+        }
+        const cardsToReturn = [];
+        for (let i = 0; i < 2 && discardPile.length > 0; i++) {
+          const randomDiscardIndex = Math.floor(Math.random() * discardPile.length);
+          cardsToReturn.push(discardPile[randomDiscardIndex]);
+          setDiscardPile(prev => [
+            ...prev.slice(0, randomDiscardIndex),
+            ...prev.slice(randomDiscardIndex + 1)
+          ]);
+        }
+        setDeck(prev => [...prev, ...cardsToReturn]);
+        showEffectMessage(`${cardsToReturn.length}枚のカードを山札に戻しました`);
+        break;
+
+      case 9:
+        // 捨て札から2枚手札に加える
+        if (discardPile.length === 0) {
+          showEffectMessage('捨て札がありません');
+          return;
+        }
+        const cardsToHand = [];
+        for (let i = 0; i < 2 && discardPile.length > 0; i++) {
+          const randomDiscardIndex = Math.floor(Math.random() * discardPile.length);
+          cardsToHand.push(discardPile[randomDiscardIndex]);
+          setDiscardPile(prev => [
+            ...prev.slice(0, randomDiscardIndex),
+            ...prev.slice(randomDiscardIndex + 1)
+          ]);
+        }
+        setHand(prev => [...prev, ...cardsToHand]);
+        showEffectMessage(`${cardsToHand.length}枚のカードを手札に加えました`);
+        break;
+
+      case 10:
+        // 場の赤と黒のカードの数だけダメージ
+        const redBlackCount = playArea.filter(c => 
+          c.color === 'red' || c.color === 'black'
+        ).length;
+        setMonsterHP(prev => Math.max(0, prev - redBlackCount));
+        showEffectMessage(`${redBlackCount}ダメージを与えました`);
+        break;
+
+      case 13:
+        // 捨て札の枚数分ダメージ
+        const discardDamage = discardPile.length;
+        setMonsterHP(prev => Math.max(0, prev - discardDamage));
+        showEffectMessage(`${discardDamage}ダメージを与えました`);
+        break;
+
+      default:
+        showEffectMessage(effect.description || '');
+        break;
+    }
+  }; 
+
+  useEffect(() => {
+    // 初期デッキを作成
+    const initialDeck = shuffleDeck(createDeck())
+    setDeck(initialDeck)
+  }, []) // 空の依存配列で一度だけ実行
+
+  const handleMonsterDefeat = () => {
+    // スコアを加算（例：現在のターン数が少ないほど高得点）
+    const turnBonus = Math.max(100 - turnCount * 2, 0)
+    const monsterBonus = currentMonster.maxHP
+    setScore(prev => prev + turnBonus + monsterBonus)
+  
+    // 次のモンスターがいれば進む
+    const currentMonsterIndex = MONSTERS.findIndex(m => m.name === currentMonster.name)
+    if (currentMonsterIndex < MONSTERS.length - 1) {
+      setCurrentMonster(MONSTERS[currentMonsterIndex + 1])
+      setMonsterHP(MONSTERS[currentMonsterIndex + 1].maxHP)
+    } else {
+      // ゲームクリア処理
+      alert(`ゲームクリア！\n最終スコア: ${score + turnBonus + monsterBonus}`)
+      setGameStarted(false)
+    }
+  }
+
+  const handleGameOver = () => {
+    setGameOver(true)
+    setGameStarted(false)
+    alert(`ゲームオーバー\n最終スコア: ${score}\nターン数: ${turnCount}`)
+  }
 
 return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-700 p-8">
       <div className="max-w-4xl mx-auto bg-gray-800 rounded-lg shadow-xl p-6">
+      <AnimatePresence>
+          {effectMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="fixed top-10 left-1/2 transform -translate-x-1/2 
+                         bg-black/80 text-white px-4 py-2 rounded-lg z-50"
+            >
+              {effectMessage}
+            </motion.div>
+          )}
+        </AnimatePresence>
         {/* Monster Area */}
         <div className="mb-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
@@ -189,19 +468,29 @@ return (
   
         {/* Hand */}
         <div className="min-h-40 p-4 bg-gray-700 rounded-lg">
-          <div className="text-white mb-2">Your Hand</div>
-          <div className="flex flex-wrap gap-4 justify-center">
+        <div className="text-white mb-2">Your Hand</div>
+        <div className="flex flex-wrap gap-4 justify-center">
+          <AnimatePresence>
             {hand.map((card, index) => (
-              <GameCard
-                key={`hand-${index}`}
-                color={card.color}
-                value={card.value}
-                onClick={() => playCard(index)}
-                disabled={!gameStarted}
-              />
+              <motion.div
+                key={`hand-${index}-${card.color}-${card.value}`}
+                variants={cardVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                layout
+              >
+          <GameCard
+            color={card.color}
+            value={card.value}
+            onClick={() => !isDrawing && !gameOver && playCard(index)}
+            disabled={!gameStarted || isDrawing || gameOver}
+          />
+              </motion.div>
             ))}
-          </div>
+          </AnimatePresence>
         </div>
+      </div>
   
         {/* Discard Pile Count */}
         <div className="mt-4 text-center text-white">
@@ -212,3 +501,4 @@ return (
     </div>
   );
 }
+

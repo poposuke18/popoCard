@@ -49,16 +49,19 @@ const getCardColor = (color: string) => {
 }
 
 export function GameCard({ color, value, onClick, disabled = false }: CardProps) {
-  const [showDescription, setShowDescription] = React.useState(false)
-
-  return (
-    <motion.div
-      whileHover={{ scale: disabled ? 1 : 1.05 }}
-      whileTap={{ scale: disabled ? 1 : 0.95 }}
-      className="relative"
-      onMouseEnter={() => setShowDescription(true)}
-      onMouseLeave={() => setShowDescription(false)}
-    >
+    const [showDescription, setShowDescription] = React.useState(false)
+  
+    return (
+        <motion.div
+        whileHover={{ scale: disabled ? 1 : 1.05 }}
+        whileTap={{ scale: disabled ? 1 : 0.95 }}
+        className="relative"
+        onMouseEnter={() => setShowDescription(true)}
+        onMouseLeave={() => setShowDescription(false)}
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", duration: 0.5 }}
+      >
       <button
         className={`
           w-20 h-28 rounded-lg ${getCardColor(color)} text-white 
