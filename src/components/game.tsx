@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { CardEffect, getCardEffect } from '@/lib/cards/effects'
 import { ModifierManager } from '@/lib/cards/modifiers'
 import { animateDrawCard, wait } from '@/lib/animations/card'
-import { BlueCardEffect } from '@/lib/cards/blueCardEffects' // 追加
+import { BlueCardEffects } from '@/lib/cards/blueCardEffects'
 
 interface CardType {
   color: 'red' | 'black' | 'blue'
@@ -43,7 +43,7 @@ export function Game() {
     const [gameStarted, setGameStarted] = useState(false)
     const [isDrawing, setIsDrawing] = useState(false)
     const [gameOver, setGameOver] = useState(false)
-    const [blueEffects] = useState(() => new BlueCardEffect());
+    const [blueEffects] = useState(() => new BlueCardEffects());
 
 
   const createDeck = () => {
@@ -135,7 +135,7 @@ export function Game() {
 
   const playCard = async (cardIndex: number) => {
     const card = hand[cardIndex];
-    
+  
     // 青1のカードの場合、手札に黒カードがあるかチェック
     if (card.color === 'blue' && card.value === 1) {
       const hasBlackCard = hand.some(c => c.color === 'black');
@@ -160,6 +160,30 @@ export function Game() {
     setHand(newHand);
     setPlayArea(prev => [...prev, card]);
   
+    // カードの種類に応じた効果の適用
+    switch (card.color) {
+      case 'blue':
+        blueEffects.handleBlueCardEffect(card.value);
+        break;
+      
+      case 'red':
+        const modifiedDamage = blueEffects.getModifiedRedDamage(card.value);
+        setMonsterHP(prev => Math.max(0, prev - modifiedDamage));
+        break;
+      
+      case 'black':
+        const originalDiscard = 14 - card.value;
+        const modifiedDiscard = blueEffects.getModifiedBlackDiscard(originalDiscard);
+        
+        // 捨て札の処理
+        if (deck.length >= modifiedDiscard) {
+          const discardedCards = deck.slice(0, modifiedDiscard);
+          setDiscardPile(prev => [...prev, ...discardedCards]);
+          setDeck(prev => prev.slice(modifiedDiscard));
+        }
+        break;
+    }
+  
     // 効果の実行
     const effect = getCardEffect(card.color, card.value);
     await executeEffect(effect);
@@ -168,8 +192,8 @@ export function Game() {
     setTurnCount(prev => prev + 1);
     
     // 青2の効果でなければカードを引く
-    if (!blueEffects.shouldSkipNextDraw()) {
-      await drawCards(1);
+    if (!blueEffects.shouldSkipDraw()) {  // メソッド名を修正
+        await drawCards(1);
     }
   
     // モンスター撃破判定

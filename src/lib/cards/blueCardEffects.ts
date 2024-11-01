@@ -1,56 +1,50 @@
-// src/lib/cards/blueCardEffects.ts を作成
-export class BlueCardEffect {
-    private lastBlueCardValue: number = 0;
-    private modifiers = {
-      redDamageMultiplier: 1,
-      blackDiscardMultiplier: 1,
-      skipNextDraw: false
-    };
+export class BlueCardEffects {
+    private lastPlayedBlueCard: number | null = null;
+    private skipNextDraw: boolean = false;
   
-    setLastBlueCard(value: number) {
-      this.lastBlueCardValue = value;
+    handleBlueCardEffect(value: number) {
+      this.lastPlayedBlueCard = value;
+      
+      if (value === 2) {
+        this.skipNextDraw = true;
+      }
     }
   
-    getModifiedDamage(originalDamage: number): number {
-      let damage = originalDamage;
-      
-      // 青5: 次の赤カードのダメージ半減
-      if (this.lastBlueCardValue === 5) {
-        damage = Math.ceil(damage / 2);
+    getModifiedRedDamage(originalDamage: number): number {
+      let modifiedDamage = originalDamage;
+  
+      if (this.lastPlayedBlueCard === 5) {
+        modifiedDamage = Math.ceil(modifiedDamage / 2);
+        this.lastPlayedBlueCard = null;
+      } else if (this.lastPlayedBlueCard === 7) {
+        modifiedDamage += 7;
+        this.lastPlayedBlueCard = null;
       }
-      
-      // 青7: 次の赤カードに+7ダメージ
-      if (this.lastBlueCardValue === 7) {
-        damage += 7;
-      }
-      
-      this.lastBlueCardValue = 0;
-      return damage;
+  
+      return modifiedDamage;
     }
   
-    getModifiedDiscardAmount(originalAmount: number): number {
-      let amount = originalAmount;
-      
-      // 青3: 次の黒カードの捨て枚数3倍
-      if (this.lastBlueCardValue === 3) {
-        amount *= 3;
+    getModifiedBlackDiscard(originalAmount: number): number {
+      let modifiedAmount = originalAmount;
+  
+      if (this.lastPlayedBlueCard === 11) {
+        modifiedAmount = Math.ceil(modifiedAmount / 2);
+        this.lastPlayedBlueCard = null;
       }
-      
-      // 青11: 次の黒カードの捨て枚数半減
-      if (this.lastBlueCardValue === 11) {
-        amount = Math.floor(amount / 2);
-      }
-      
-      // 青12: 次の黒カードで捨てない
-      if (this.lastBlueCardValue === 12) {
-        amount = 0;
-      }
-      
-      this.lastBlueCardValue = 0;
-      return amount;
+  
+      return modifiedAmount;
     }
   
-    shouldSkipNextDraw(): boolean {
-      return this.lastBlueCardValue === 2;
+    shouldSkipDraw(): boolean {
+      if (this.skipNextDraw) {
+        this.skipNextDraw = false;
+        return true;
+      }
+      return false;
+    }
+  
+    reset() {
+      this.lastPlayedBlueCard = null;
+      this.skipNextDraw = false;
     }
   }
