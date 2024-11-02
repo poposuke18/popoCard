@@ -410,7 +410,7 @@ return (
           <div className="relative w-full h-[300px] mb-4 flex justify-center items-center">
             <div className="relative w-[300px] h-[300px]">
             <Image
-  src={`${process.env.NEXT_PUBLIC_BASE_PATH}/images/${currentMonster.name}.png`}
+  src={`/popoCard/images/${currentMonster.name}.png`}
   alt={currentMonster.name}
   fill
   style={{ objectFit: 'contain' }}
