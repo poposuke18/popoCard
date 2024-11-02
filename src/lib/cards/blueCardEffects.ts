@@ -1,50 +1,51 @@
 export class BlueCardEffects {
     private lastPlayedBlueCard: number | null = null;
     private skipNextDraw: boolean = false;
-  
+
+    // setLastBlueCard → handleBlueCardEffect に名前を変更
     handleBlueCardEffect(value: number) {
-      this.lastPlayedBlueCard = value;
-      
-      if (value === 2) {
-        this.skipNextDraw = true;
-      }
+        this.lastPlayedBlueCard = value;
+        
+        if (value === 2) {
+            this.skipNextDraw = true;
+        }
     }
-  
+
     getModifiedRedDamage(originalDamage: number): number {
-      let modifiedDamage = originalDamage;
-  
-      if (this.lastPlayedBlueCard === 5) {
-        modifiedDamage = Math.ceil(modifiedDamage / 2);
-        this.lastPlayedBlueCard = null;
-      } else if (this.lastPlayedBlueCard === 7) {
-        modifiedDamage += 7;
-        this.lastPlayedBlueCard = null;
-      }
-  
-      return modifiedDamage;
+        let modifiedDamage = originalDamage;
+
+        if (this.lastPlayedBlueCard === 5) {
+            modifiedDamage = Math.ceil(modifiedDamage / 2);
+            this.lastPlayedBlueCard = null;
+        } else if (this.lastPlayedBlueCard === 7) {
+            modifiedDamage += 7;
+            this.lastPlayedBlueCard = null;
+        }
+
+        return modifiedDamage;
     }
-  
+
     getModifiedBlackDiscard(originalAmount: number): number {
-      let modifiedAmount = originalAmount;
-  
-      if (this.lastPlayedBlueCard === 11) {
-        modifiedAmount = Math.ceil(modifiedAmount / 2);
-        this.lastPlayedBlueCard = null;
-      }
-  
-      return modifiedAmount;
+        let modifiedAmount = originalAmount;
+
+        if (this.lastPlayedBlueCard === 11) {
+            modifiedAmount = Math.ceil(modifiedAmount / 2);
+            this.lastPlayedBlueCard = null;
+        }
+
+        return modifiedAmount;
     }
-  
+
     shouldSkipDraw(): boolean {
-      if (this.skipNextDraw) {
-        this.skipNextDraw = false;
-        return true;
-      }
-      return false;
+        if (this.skipNextDraw) {
+            this.skipNextDraw = false;
+            return true;
+        }
+        return false;
     }
-  
+
     reset() {
-      this.lastPlayedBlueCard = null;
-      this.skipNextDraw = false;
+        this.lastPlayedBlueCard = null;
+        this.skipNextDraw = false;
     }
-  }
+}

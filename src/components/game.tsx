@@ -7,7 +7,6 @@ import Image from 'next/image'
 import { GameCard } from './game-card'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CardEffect, getCardEffect } from '@/lib/cards/effects'
-import { ModifierManager } from '@/lib/cards/modifiers'
 import { animateDrawCard, wait } from '@/lib/animations/card'
 import { BlueCardEffects } from '@/lib/cards/blueCardEffects'
 
@@ -34,7 +33,6 @@ export function Game() {
     const [hand, setHand] = useState<CardType[]>([])
     const [playArea, setPlayArea] = useState<CardType[]>([])
     const [discardPile, setDiscardPile] = useState<CardType[]>([])
-    const [effectManager] = useState(() => new ModifierManager())
     const [effectMessage, setEffectMessage] = useState<string>('')
 
     const [score, setScore] = useState(0)
@@ -134,7 +132,7 @@ export function Game() {
   }
 
   const playCard = async (cardIndex: number) => {
-    const card = hand[cardIndex];
+    const card = hand[cardIndex] as PlayedCard;
   
     // 青1のカードの場合、手札に黒カードがあるかチェック
     if (card.color === 'blue' && card.value === 1) {
@@ -186,8 +184,7 @@ export function Game() {
   
     // 効果の実行
     const effect = getCardEffect(card.color, card.value);
-    await executeEffect(effect);
-  
+    await executeEffect(effect, card); 
     // ターン終了処理
     setTurnCount(prev => prev + 1);
     
@@ -207,83 +204,83 @@ export function Game() {
     setTimeout(() => setEffectMessage(''), 2000) // 2秒後にメッセージを消す
   }
 
-  const executeEffect = async (effect: CardEffect) => {
-    const modifiedValue = effect.type === 'damage'
-    ? blueEffects.getModifiedRedDamage(effect.value)  // getModifiedDamage → getModifiedRedDamage
-    : effect.type === 'discard'
-    ? blueEffects.getModifiedBlackDiscard(effect.value)  // getModifiedDiscardAmount → getModifiedBlackDiscard
-    : effect.value;
-       
-    switch (effect.type) {
-        case 'damage':
-            setMonsterHP(prev => Math.max(0, prev - modifiedValue));
-            showEffectMessage(`${modifiedValue}のダメージ！`);
-            break;
-        
-      case 'heal':
-        setMonsterHP(prev => Math.min(currentMonster.maxHP, prev + modifiedValue))
-        showEffectMessage(`${modifiedValue}回復！`)
-        break
-        
-        case 'discard':
-            if (deck.length < modifiedValue) {
-              showEffectMessage('デッキが足りません！');
-              return;
-            }
-            const cardsToDiscard = deck.slice(0, modifiedValue);
-            setDiscardPile(prev => [...prev, ...cardsToDiscard]);
-            setDeck(prev => prev.slice(modifiedValue));
-            showEffectMessage(`${modifiedValue}枚捨てました`);
-            break;
-        
-            case 'special':
-                handleSpecialEffect(effect);
-                break;
-    }
+  const executeEffect = async (
+    effect: CardEffect,
+    targetCard: PlayedCard
+  ) => {
+      const modifiedValue = effect.type === 'damage'
+          ? blueEffects.getModifiedRedDamage(effect.value)
+          : effect.type === 'discard'
+          ? blueEffects.getModifiedBlackDiscard(effect.value)
+          : effect.value;
+         
+      switch (effect.type) {
+          case 'damage':
+              setMonsterHP(prev => Math.max(0, prev - modifiedValue));
+              showEffectMessage(`${modifiedValue}のダメージ！`);
+              break;
+          
+          case 'heal':
+              setMonsterHP(prev => Math.min(currentMonster.maxHP, prev + modifiedValue))
+              showEffectMessage(`${modifiedValue}回復！`)
+              break;
+          
+          case 'discard':
+              if (deck.length < modifiedValue) {
+                  showEffectMessage('デッキが足りません！');
+                  return;
+              }
+              const cardsToDiscard = deck.slice(0, modifiedValue);
+              setDiscardPile(prev => [...prev, ...cardsToDiscard]);
+              setDeck(prev => prev.slice(modifiedValue));
+              showEffectMessage(`${modifiedValue}枚捨てました`);
+              break;
+          
+          case 'special':
+              await handleSpecialEffect(effect, targetCard);
+              break;
+      }
+  };
+
+interface PlayedCard extends CardType {
+    color: 'red' | 'black' | 'blue'
+    value: number
   }
 
   // 特殊効果の処理
-  const handleSpecialEffect = async (effect: CardEffect) => {
-    blueEffects.setLastBlueCard(effect.value);
-
-    switch (effect.value) {
-        case 1:
-            // まず手札に黒カードがあるかチェック
-            const blackCards = hand.filter(c => c.color === 'black');
-            if (blackCards.length === 0) {
-              showEffectMessage('このカードは手札に黒のカードがないと出せません');
-              // カードを出せなかった場合、手札に戻す必要がある
-              setHand(prev => [...prev, card]);
-              // 場から除去
-              setPlayArea(prev => prev.slice(0, -1));
-              return;
-            }
-          
-            // ランダムに黒カードを選択
-            const randomBlackCard = blackCards[Math.floor(Math.random() * blackCards.length)];
-            showEffectMessage('ランダムな黒カードを場に出します');
+  const handleSpecialEffect = async (
+    effect: CardEffect,
+    targetCard: PlayedCard
+  ) => {
+      blueEffects.handleBlueCardEffect(effect.value);
+  
+      switch (effect.value) {
+          case 1:
+              const blackCards = hand.filter(c => c.color === 'black');
+              if (blackCards.length === 0) {
+                  showEffectMessage('このカードは手札に黒のカードがないと出せません');
+                  setHand(prev => [...prev, targetCard]);
+                  setPlayArea(prev => prev.slice(0, -1));
+                  return;
+              }
             
-            // 選択された黒カードのインデックスを探す
-            const blackCardIndex = hand.findIndex(c => 
-              c.color === randomBlackCard.color && 
-              c.value === randomBlackCard.value
-            );
-            
-            // 黒カードを出す
-            if (blackCardIndex !== -1) {
-              // 少し待ってから黒カードを出す（視覚的効果）
-              await wait(500);
-              // 既存のplayCard関数を使用すると無限ループの可能性があるため、
-              // 直接効果を適用
-              const blackCardEffect = getCardEffect('black', randomBlackCard.value);
-              await executeEffect(blackCardEffect);
+              const randomBlackCard = blackCards[Math.floor(Math.random() * blackCards.length)];
+              showEffectMessage('ランダムな黒カードを場に出します');
               
-              // 手札から削除
-              setHand(prev => prev.filter((_, index) => index !== blackCardIndex));
-              // 場に追加
-              setPlayArea(prev => [...prev, randomBlackCard]);
-            }
-            break;
+              const blackCardIndex = hand.findIndex(c => 
+                  c.color === randomBlackCard.color && 
+                  c.value === randomBlackCard.value
+              );
+              
+              if (blackCardIndex !== -1) {
+                  await wait(500);
+                  const blackCardEffect = getCardEffect('black', randomBlackCard.value);
+                  await executeEffect(blackCardEffect, randomBlackCard);
+                  
+                  setHand(prev => prev.filter((_, index) => index !== blackCardIndex));
+                  setPlayArea(prev => [...prev, randomBlackCard]);
+              }
+              break;
 
       case 2:
         // このターンカードを引かない
@@ -296,43 +293,45 @@ export function Game() {
         showEffectMessage('モンスターのHPを10回復');
         break;
 
-      case 8:
-        // 捨て札から2枚山札に戻す
-        if (discardPile.length === 0) {
-          showEffectMessage('捨て札がありません');
-          return;
-        }
-        const cardsToReturn = [];
-        for (let i = 0; i < 2 && discardPile.length > 0; i++) {
-          const randomDiscardIndex = Math.floor(Math.random() * discardPile.length);
-          cardsToReturn.push(discardPile[randomDiscardIndex]);
-          setDiscardPile(prev => [
-            ...prev.slice(0, randomDiscardIndex),
-            ...prev.slice(randomDiscardIndex + 1)
-          ]);
-        }
-        setDeck(prev => [...prev, ...cardsToReturn]);
-        showEffectMessage(`${cardsToReturn.length}枚のカードを山札に戻しました`);
-        break;
-
-      case 9:
-        // 捨て札から2枚手札に加える
-        if (discardPile.length === 0) {
-          showEffectMessage('捨て札がありません');
-          return;
-        }
-        const cardsToHand = [];
-        for (let i = 0; i < 2 && discardPile.length > 0; i++) {
-          const randomDiscardIndex = Math.floor(Math.random() * discardPile.length);
-          cardsToHand.push(discardPile[randomDiscardIndex]);
-          setDiscardPile(prev => [
-            ...prev.slice(0, randomDiscardIndex),
-            ...prev.slice(randomDiscardIndex + 1)
-          ]);
-        }
-        setHand(prev => [...prev, ...cardsToHand]);
-        showEffectMessage(`${cardsToHand.length}枚のカードを手札に加えました`);
-        break;
+        case 8:
+            // 捨て札から2枚山札に戻す
+            if (discardPile.length === 0) {
+              showEffectMessage('捨て札がありません');
+              return;
+            }
+            // cardsToReturnの型を明示
+            const cardsToReturn: CardType[] = [];
+            for (let i = 0; i < 2 && discardPile.length > 0; i++) {
+              const randomDiscardIndex = Math.floor(Math.random() * discardPile.length);
+              cardsToReturn.push(discardPile[randomDiscardIndex]);
+              setDiscardPile(prev => [
+                ...prev.slice(0, randomDiscardIndex),
+                ...prev.slice(randomDiscardIndex + 1)
+              ]);
+            }
+            setDeck(prev => [...prev, ...cardsToReturn]);
+            showEffectMessage(`${cardsToReturn.length}枚のカードを山札に戻しました`);
+            break;
+          
+          case 9:
+            // 捨て札から2枚手札に加える
+            if (discardPile.length === 0) {
+              showEffectMessage('捨て札がありません');
+              return;
+            }
+            // cardsToHandの型を明示
+            const cardsToHand: CardType[] = [];
+            for (let i = 0; i < 2 && discardPile.length > 0; i++) {
+              const randomDiscardIndex = Math.floor(Math.random() * discardPile.length);
+              cardsToHand.push(discardPile[randomDiscardIndex]);
+              setDiscardPile(prev => [
+                ...prev.slice(0, randomDiscardIndex),
+                ...prev.slice(randomDiscardIndex + 1)
+              ]);
+            }
+            setHand(prev => [...prev, ...cardsToHand]);
+            showEffectMessage(`${cardsToHand.length}枚のカードを手札に加えました`);
+            break;
 
       case 10:
         // 場の赤と黒のカードの数だけダメージ

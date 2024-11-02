@@ -5,7 +5,8 @@ const nextConfig = {
     unoptimized: true,
   },
   basePath: '/popoCard',
-  assetPrefix: '/popoCard/',
+  // assetPrefixは削除または修正
+  // assetPrefix: '/popoCard/',
 }
 
 module.exports = nextConfig
