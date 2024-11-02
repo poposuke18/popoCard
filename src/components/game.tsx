@@ -409,14 +409,14 @@ return (
           {/* Monster Image */}
           <div className="relative w-full h-[300px] mb-4 flex justify-center items-center">
             <div className="relative w-[300px] h-[300px]">
-              <Image
-                src={`/images/${currentMonster.name}.png`}
-                alt={currentMonster.name}
-                fill
-                style={{ objectFit: 'contain' }}
-                className="transition-all duration-300"
-                priority
-              />
+            <Image
+  src={`${process.env.NEXT_PUBLIC_BASE_PATH}/images/${currentMonster.name}.png`}
+  alt={currentMonster.name}
+  fill
+  style={{ objectFit: 'contain' }}
+  className="transition-all duration-300"
+  priority
+/>
             </div>
           </div>
           {/* HP Bar */}
