@@ -29,13 +29,13 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Create .nojekyll file
-        run: touch out/.nojekyll
+      - name: Add .nojekyll file
+        run: touch ./out/.nojekyll
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: out
           branch: gh-pages
+          folder: out
           clean: true
-          single-commit: true  # これを追加
+          single-commit: true
