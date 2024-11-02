@@ -209,10 +209,10 @@ export function Game() {
 
   const executeEffect = async (effect: CardEffect) => {
     const modifiedValue = effect.type === 'damage'
-      ? blueEffects.getModifiedDamage(effect.value)
-      : effect.type === 'discard'
-      ? blueEffects.getModifiedDiscardAmount(effect.value)
-      : effect.value;
+    ? blueEffects.getModifiedRedDamage(effect.value)  // getModifiedDamage → getModifiedRedDamage
+    : effect.type === 'discard'
+    ? blueEffects.getModifiedBlackDiscard(effect.value)  // getModifiedDiscardAmount → getModifiedBlackDiscard
+    : effect.value;
        
     switch (effect.type) {
         case 'damage':
