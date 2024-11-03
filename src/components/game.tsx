@@ -255,43 +255,86 @@ interface PlayedCard extends CardType {
       blueEffects.handleBlueCardEffect(effect.value);
   
       switch (effect.value) {
-          case 1:
-              const blackCards = hand.filter(c => c.color === 'black');
-              if (blackCards.length === 0) {
-                  showEffectMessage('このカードは手札に黒のカードがないと出せません');
-                  setHand(prev => [...prev, targetCard]);
-                  setPlayArea(prev => prev.slice(0, -1));
-                  return;
-              }
+        case 1:
+            // 手札の黒カードをチェック
+            const blackCards = hand.filter(c => c.color === 'black');
+            if (blackCards.length === 0) {
+              showEffectMessage('このカードは手札に黒がないと出せません');
+              setHand(prev => [...prev, targetCard]);
+              setPlayArea(prev => prev.slice(0, -1));
+              return;
+            }
+          
+            // ランダムに黒カードを選択
+            const randomBlackCard = blackCards[Math.floor(Math.random() * blackCards.length)];
             
-              const randomBlackCard = blackCards[Math.floor(Math.random() * blackCards.length)];
-              showEffectMessage('ランダムな黒カードを場に出します');
+            // 選択された黒カードのインデックスを取得
+            const blackCardIndex = hand.findIndex(c => 
+              c.color === randomBlackCard.color && 
+              c.value === randomBlackCard.value
+            );
+            
+            if (blackCardIndex !== -1) {
+              // メッセージを表示
+              showEffectMessage(`黒の${randomBlackCard.value}を使用します`);
               
-              const blackCardIndex = hand.findIndex(c => 
-                  c.color === randomBlackCard.color && 
-                  c.value === randomBlackCard.value
-              );
+              // 手札から黒カードを削除
+              setHand(prev => prev.filter((_, index) => index !== blackCardIndex));
               
-              if (blackCardIndex !== -1) {
-                  await wait(500);
-                  const blackCardEffect = getCardEffect('black', randomBlackCard.value);
-                  await executeEffect(blackCardEffect, randomBlackCard);
-                  
-                  setHand(prev => prev.filter((_, index) => index !== blackCardIndex));
-                  setPlayArea(prev => [...prev, randomBlackCard]);
+              // 場に黒カードを追加
+              setPlayArea(prev => [...prev, randomBlackCard]);
+              
+              // 黒カードの効果を適用（山札から捨てる処理）
+              const discardAmount = blueEffects.getModifiedBlackDiscard(14 - randomBlackCard.value);
+              
+              if (deck.length >= discardAmount) {
+                // 山札から指定枚数を捨て札に移動
+                setDeck(prev => {
+                  const newDeck = [...prev];
+                  const discarded = newDeck.splice(0, discardAmount);
+                  setDiscardPile(prevDiscard => [...prevDiscard, ...discarded]);
+                  return newDeck;
+                });
+                
+                showEffectMessage(`山札から${discardAmount}枚のカードを捨てました`);
+              } else {
+                showEffectMessage('山札が足りないため、効果を完全に適用できません');
+                // 残っている山札をすべて捨てる
+                setDeck(prev => {
+                  const discarded = [...prev];
+                  setDiscardPile(prevDiscard => [...prevDiscard, ...discarded]);
+                  return [];
+                });
               }
-              break;
+            }
+            break;
 
       case 2:
         // このターンカードを引かない
         showEffectMessage('このターンはカードを引きません');
         break;
 
+        case 3:
+            showEffectMessage('次の黒のカードの効果が3倍になります');
+            break;
+
       case 4:
         // モンスターのHP回復
         setMonsterHP(prev => Math.min(currentMonster.maxHP, prev + 10));
         showEffectMessage('モンスターのHPを10回復');
         break;
+
+        case 5:
+            showEffectMessage('次の赤のカードの攻撃力が半分になります');
+            break;
+      
+          case 6:
+            showEffectMessage('効果なし');
+            break;
+      
+          case 7:
+            showEffectMessage('次の赤のカードの攻撃力が7増加します');
+            break;
 
         case 8:
             // 捨て札から2枚山札に戻す
@@ -313,25 +356,16 @@ interface PlayedCard extends CardType {
             showEffectMessage(`${cardsToReturn.length}枚のカードを山札に戻しました`);
             break;
           
-          case 9:
-            // 捨て札から2枚手札に加える
-            if (discardPile.length === 0) {
-              showEffectMessage('捨て札がありません');
-              return;
-            }
-            // cardsToHandの型を明示
-            const cardsToHand: CardType[] = [];
-            for (let i = 0; i < 2 && discardPile.length > 0; i++) {
-              const randomDiscardIndex = Math.floor(Math.random() * discardPile.length);
-              cardsToHand.push(discardPile[randomDiscardIndex]);
-              setDiscardPile(prev => [
-                ...prev.slice(0, randomDiscardIndex),
-                ...prev.slice(randomDiscardIndex + 1)
-              ]);
-            }
-            setHand(prev => [...prev, ...cardsToHand]);
-            showEffectMessage(`${cardsToHand.length}枚のカードを手札に加えました`);
-            break;
+            case 9:
+                if (discardPile.length === 0) {
+                  showEffectMessage('捨て札がありません');
+                  return;
+                }
+                const cardsToHand = discardPile.slice(0, Math.min(2, discardPile.length));
+                setDiscardPile(prev => prev.slice(cardsToHand.length));
+                setHand(prev => [...prev, ...cardsToHand]);
+                showEffectMessage(`${cardsToHand.length}枚のカードを手札に加えました`);
+                break;
 
             case 10:
                 console.log('青10効果発動：場のカード状況', {
@@ -362,6 +396,14 @@ interface PlayedCard extends CardType {
                 
                 this.lastPlayedBlueCard = null;
                 break;
+
+                case 11:
+                    showEffectMessage('次の黒のカードの効果が半分になります');
+                    break;
+              
+                  case 12:
+                    showEffectMessage('次の黒のカードの効果が無効になります');
+                    break;
 
       case 13:
         // 捨て札の枚数分ダメージ
