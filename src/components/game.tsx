@@ -333,14 +333,35 @@ interface PlayedCard extends CardType {
             showEffectMessage(`${cardsToHand.length}枚のカードを手札に加えました`);
             break;
 
-      case 10:
-        // 場の赤と黒のカードの数だけダメージ
-        const redBlackCount = playArea.filter(c => 
-          c.color === 'red' || c.color === 'black'
-        ).length;
-        setMonsterHP(prev => Math.max(0, prev - redBlackCount));
-        showEffectMessage(`${redBlackCount}ダメージを与えました`);
-        break;
+            case 10:
+                console.log('青10効果発動：場のカード状況', {
+                  allCards: playArea,
+                  redBlackCards: playArea.filter(card => card.color === 'red' || card.color === 'black'),
+                  currentPlayArea: playArea.map(card => `${card.color}${card.value}`).join(', ')
+                });
+                
+                const redBlackCount = playArea.filter(card => 
+                  card.color === 'red' || card.color === 'black'
+                ).length - 1;
+                
+                console.log('計算結果：', {
+                  redBlackCount,
+                  damage: redBlackCount
+                });
+                
+                if (redBlackCount > 0) {
+                  setMonsterHP(prev => {
+                    const newHP = Math.max(0, prev - redBlackCount);
+                    console.log('HP変更：', { 前: prev, 後: newHP, 与ダメージ: redBlackCount });
+                    return newHP;
+                  });
+                  showEffectMessage(`場の赤・黒カード${redBlackCount}枚分の${redBlackCount}ダメージを与えました！`);
+                } else {
+                  showEffectMessage('場に赤・黒カードがないためダメージを与えられません');
+                }
+                
+                this.lastPlayedBlueCard = null;
+                break;
 
       case 13:
         // 捨て札の枚数分ダメージ
