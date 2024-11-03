@@ -1,21 +1,20 @@
-import type { Metadata } from "next";
-import "./globals.css";
+// layout.tsx
+import { Inter, Noto_Sans_JP, JetBrains_Mono } from 'next/font/google'
 
-export const metadata: Metadata = {
-  title: "PopoCard",  // タイトルを変更
-  description: "Card Battle Game",  // 説明を変更
-};
+const inter = Inter({ subsets: ['latin'] })
+const notoSansJp = Noto_Sans_JP({ subsets: ['latin'] })
+const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'] })
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="ja"> 
-      <body className="antialiased">
+    <html lang="ja">
+      <body className={`${notoSansJp.className} antialiased`}>
         {children}
       </body>
     </html>
-  );
+  )
 }

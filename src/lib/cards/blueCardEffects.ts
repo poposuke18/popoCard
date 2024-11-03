@@ -2,7 +2,6 @@ export class BlueCardEffects {
     private lastPlayedBlueCard: number | null = null;
     private skipNextDraw: boolean = false;
 
-    // setLastBlueCard → handleBlueCardEffect に名前を変更
     handleBlueCardEffect(value: number) {
         this.lastPlayedBlueCard = value;
         
@@ -28,8 +27,14 @@ export class BlueCardEffects {
     getModifiedBlackDiscard(originalAmount: number): number {
         let modifiedAmount = originalAmount;
 
-        if (this.lastPlayedBlueCard === 11) {
+        if (this.lastPlayedBlueCard === 3) {
+            modifiedAmount = originalAmount * 3;
+            this.lastPlayedBlueCard = null;
+        } else if (this.lastPlayedBlueCard === 11) {
             modifiedAmount = Math.ceil(modifiedAmount / 2);
+            this.lastPlayedBlueCard = null;
+        } else if (this.lastPlayedBlueCard === 12) {
+            modifiedAmount = 0;
             this.lastPlayedBlueCard = null;
         }
 
