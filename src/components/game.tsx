@@ -394,7 +394,6 @@ interface PlayedCard extends CardType {
                   showEffectMessage('場に赤・黒カードがないためダメージを与えられません');
                 }
                 
-                this.lastPlayedBlueCard = null;
                 break;
 
                 case 11:
