@@ -5,7 +5,8 @@ const nextConfig = {
     unoptimized: true,
   },
   basePath: '/popoCard',
-  trailingSlash: true,  // 追加
+  trailingSlash: true,
+  distDir: 'out',  // 追加
 }
 
 module.exports = nextConfig
